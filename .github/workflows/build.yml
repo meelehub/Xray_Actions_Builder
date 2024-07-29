@@ -1,0 +1,234 @@
+name: "Build latest images & releases"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */1 * * *"
+
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
+jobs:
+  Check-version:
+    runs-on: ubuntu-latest
+    name: "Check version"
+    outputs:
+      latest_now: ${{ steps.get-version.outputs.latest_now }}
+      latest_new: ${{ steps.get-version.outputs.latest_new }}
+      latest_renew: ${{ steps.get-version.outputs.latest_renew }}
+      commit: ${{ steps.get-version.outputs.commit }}
+      go_version: ${{ steps.get-version.outputs.go_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Check version
+        id: get-version
+        run: |
+          LATEST_NOW=$(awk '/latest/{print $NF; exit}' README.md)
+
+          LATEST_NEW=$(curl -s 'https://api.github.com/repos/XTLS/Xray-core/releases' | jq -r '.[0].tag_name')
+          GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | awk 'NR==1' | sed 's/^go//')
+
+          echo "LATEST_NOW: $LATEST_NOW"
+          echo "LATEST_NEW: $LATEST_NEW"
+
+          if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
+            LATEST_RENEW=1
+          fi
+
+          if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
+            echo "latest_now=$LATEST_NOW" >> $GITHUB_OUTPUT
+            echo "latest_new=$LATEST_NEW" >> $GITHUB_OUTPUT
+            echo "latest_renew=$LATEST_RENEW" >> $GITHUB_OUTPUT
+            echo "go_version=$GO_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+          DATE=$(date "+%Y/%m/%d")
+          if [ "$LATEST_RENEW" == '1' ]; then
+            COMMIT="Build to $LATEST_NEW by Github Actions, $DATE"
+            echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          fi
+  # =============================================================================================================================================================================================
+  Create-release:
+    needs: Check-version
+    runs-on: ubuntu-latest
+    name: "Create release"
+    env:
+      LATEST_NEW: ${{ needs.Check-version.outputs.latest_new }}
+      LATEST_RENEW: ${{ needs.Check-version.outputs.latest_renew }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Create latest release
+        if: ${{ env.LATEST_RENEW == '1' }}
+        uses: shogo82148/actions-create-release@v1.6.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.LATEST_NEW }}
+          release_name: ${{ env.LATEST_NEW }}
+          draft: false
+          prerelease: false
+          overwrite: true
+  # =============================================================================================================================================================================================
+  Build-latest-image:
+    needs: Check-version
+    runs-on: ubuntu-latest
+    name: "Build latest image"
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      DOCKERHUB_REPOSITORY: ${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}
+      LATEST_NEW: ${{ needs.Check-version.outputs.latest_new }}
+
+    steps:
+      - name: Checkout code
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: docker/setup-qemu-action@v3.0.0
+
+      - name: Set up Docker Buildx
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: docker/setup-buildx-action@v3.0.0
+
+      - name: Login to DockerHub
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: docker/login-action@v3.0.0
+        with:
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Push images to Docker hub
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: docker/build-push-action@v5.1.0
+        with:
+          push: true
+          platforms: linux/i386, linux/amd64, linux/arm/v7, linux/arm64
+          build-args: BRANCH=${{ env.LATEST_NEW }}
+          tags: |
+            ${{ env.DOCKERHUB_REPOSITORY }}:latest
+            ${{ env.DOCKERHUB_REPOSITORY }}:${{ env.LATEST_NEW }}
+  # =============================================================================================================================================================================================
+  Build-latest-releases:
+    needs: Check-version
+    runs-on: ubuntu-latest
+    name: Build latest releases
+    env:
+      CGO_ENABLED: 0
+      BINARY: xray
+      LATEST_NEW: ${{ needs.Check-version.outputs.latest_new }}
+      GO_VERSION: ${{ needs.Check-version.outputs.go_version }}
+
+    strategy:
+      matrix:
+        goos: [linux, windows, darwin]
+        goarch: ["386", amd64, arm, arm64]
+        exclude:
+          - goarch: 386
+            goos: linux
+          - goarch: arm
+            goos: linux
+          - goarch: "386"
+            goos: darwin
+          - goarch: "arm"
+            goos: darwin
+          - goarch: "386"
+            goos: windows
+          - goarch: arm
+            goos: windows
+
+    steps:
+      - name: Checkout code
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Git clone repository
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: "XTLS/Xray-core"
+          ref: "${{ env.LATEST_NEW }}"
+          fetch-depth: 1
+
+      - name: Build latest releases
+        if: ${{ env.LATEST_NEW != '' }}
+        uses: fscarmen/go-release-action@v1.0.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # 你的 GITHUB_TOKEN 用于将版本上传到 Github Release。
+          goos: ${{ matrix.goos }} # 运行程序的操作系统
+          goarch: ${{ matrix.goarch }} # 运行程序的架构
+          goversion: ${{ env.GO_VERSION }} # Go 编译环境版本
+          project_path: "./main" # 在哪里运行 go build 命令。
+          binary_name: "${{ env.BINARY }}" # 二进制名称
+          build_flags: "-trimpath" # 传递给 go build 命令的其他参数
+          ldflags: -s -w -buildid= # ldflags参数
+          md5sum: "false"
+          release_tag: "${{ env.LATEST_NEW }}" # 上传的标签
+          release_name: "${{ env.LATEST_NEW }}" # 上传的名字
+          compress_assets: "auto" # 自定义打包
+          overwrite: true # 覆盖
+          asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}" # 自定义名称
+  # =============================================================================================================================================================================================
+  Mark-image-version:
+    needs:
+      - Check-version
+      - Create-release
+      - Build-latest-image
+      - Build-latest-releases
+    runs-on: ubuntu-latest
+    name: "Mark the image version"
+    env:
+      LATEST_NOW: ${{ needs.Check-version.outputs.latest_now }}
+      LATEST_NEW: ${{ needs.Check-version.outputs.latest_new }}
+      LATEST_RENEW: ${{ needs.Check-version.outputs.latest_renew }}
+      COMMIT: ${{ needs.Check-version.outputs.commit }}
+
+    steps:
+      - name: checkout
+        if: ${{ env.COMMIT != '' }}
+        uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+
+      - name: Check and Mark
+        if: ${{ env.COMMIT != '' }}
+        run: |
+          if [ "${{ env.LATEST_RENEW }}" == '1' ]; then
+            sed -i "s/\(latest.*:\).*/\1 ${{ env.LATEST_NEW }}/" README.md
+          fi
+
+          git checkout --orphan tmp_work
+          git branch -d main
+
+      - name: Upload to repository
+        if: ${{ env.COMMIT != '' }}
+        uses: stefanzweifel/git-auto-commit-action@v4.16.0
+        with:
+          commit_message: ${{ env.COMMIT }}
+          create_branch: true
+          branch: main
+          push_options: --force
+
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          retain_days: 0
+          keep_minimum_runs: 0
+          delete_run_by_conclusion_pattern: "cancelled, skipped, success"
