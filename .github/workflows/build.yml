@@ -36,17 +36,16 @@ jobs:
 
           echo "LATEST_NOW: $LATEST_NOW"
           echo "LATEST_NEW: $LATEST_NEW"
-
+          
+          LATEST_RENEW=0
           if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
             LATEST_RENEW=1
           fi
 
-          if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
-            echo "latest_now=$LATEST_NOW" >> $GITHUB_OUTPUT
-            echo "latest_new=$LATEST_NEW" >> $GITHUB_OUTPUT
-            echo "latest_renew=$LATEST_RENEW" >> $GITHUB_OUTPUT
-            echo "go_version=$GO_VERSION" >> $GITHUB_OUTPUT
-          fi
+          echo "latest_now=$LATEST_NOW" >> $GITHUB_OUTPUT
+          echo "latest_new=$LATEST_NEW" >> $GITHUB_OUTPUT
+          echo "latest_renew=$LATEST_RENEW" >> $GITHUB_OUTPUT
+          echo "go_version=$GO_VERSION" >> $GITHUB_OUTPUT
 
           DATE=$(date "+%Y/%m/%d")
           if [ "$LATEST_RENEW" == '1' ]; then
