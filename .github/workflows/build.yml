@@ -215,4 +215,4 @@ jobs:
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "auto"
           overwrite: true
-          asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && '-v' }}${{ matrix.goarm }}"
+          asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm != '' && format('-v{0}', matrix.goarm) || '' }}"
