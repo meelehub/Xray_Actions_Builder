@@ -35,6 +35,7 @@ jobs:
 
           echo "LATEST_NOW: $LATEST_NOW"
           echo "LATEST_NEW: $LATEST_NEW"
+          echo "GO_VERSION: $GO_VERSION"
           
           LATEST_RENEW=0
           if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
@@ -91,6 +92,8 @@ jobs:
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.0.0
+        with:
+          buildkitd-flags: --debug
       
       - name: Login to DockerHub
         uses: docker/login-action@v3.0.0
@@ -98,7 +101,7 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
-      # Build and push Docker image      
+      # Build and push Docker image with caching      
       - name: Push images to Docker hub
         uses: docker/build-push-action@v5.1.0
         with:
@@ -108,6 +111,8 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_REPOSITORY }}:latest
             ${{ env.DOCKERHUB_REPOSITORY }}:${{ env.LATEST_NEW }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # Update README with new version And Commit changes    
       - name: Update README and commit
@@ -150,6 +155,10 @@ jobs:
             goarch: amd64
           - goos: linux
             goarch: arm
+            goarm: "7"
+          - goos: linux
+            goarch: arm
+            goarm: "6"
           - goos: linux
             goarch: arm64
           # Windows builds
@@ -159,6 +168,7 @@ jobs:
             goarch: amd64
           - goos: windows
             goarch: arm
+            goarm: "7"
           - goos: windows
             goarch: arm64
           # macOS builds (no 386 or arm)
@@ -170,6 +180,15 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0
+      
+      # Setup Go with caching
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
       
       - name: Git clone repository
         uses: actions/checkout@v4
@@ -185,6 +204,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
+          goarm: ${{ matrix.goarm }}
           goversion: ${{ env.GO_VERSION }}
           project_path: "./xray-core/main"
           binary_name: "${{ env.BINARY }}"
@@ -195,4 +215,4 @@ jobs:
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "auto"
           overwrite: true
-          asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}"
+          asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && '-v' }}${{ matrix.goarm }}"
