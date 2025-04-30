@@ -90,28 +90,28 @@ jobs:
 
     steps:
       - name: Checkout code
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0
 
       - name: Set up QEMU
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: docker/setup-qemu-action@v3.0.0
 
       - name: Set up Docker Buildx
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: docker/setup-buildx-action@v3.0.0
 
       - name: Login to DockerHub
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: docker/login-action@v3.0.0
         with:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
       - name: Push images to Docker hub
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: docker/build-push-action@v5.1.0
         with:
           push: true
@@ -151,13 +151,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: actions/checkout@v4.1.1
         with:
           fetch-depth: 0
 
       - name: Git clone repository
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: actions/checkout@v4
         with:
           repository: "XTLS/Xray-core"
@@ -165,7 +165,7 @@ jobs:
           fetch-depth: 1
 
       - name: Build latest releases
-        if: ${{ env.LATEST_NEW != '' }}
+        if: ${{ env.LATEST_NEW == '1' }}
         uses: fscarmen/go-release-action@v1.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }} # 你的 GITHUB_TOKEN 用于将版本上传到 Github Release。
