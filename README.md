@@ -3,7 +3,7 @@
 - 本教程教您如何使用GitHub Actions 全自动构建Xray Docker镜像 与 仓库Releases发布
 
 ## 目前Docker镜像 / Releases版本：
- - ### **latest**: v25.5.16
+ - ### **latest**: v25.4.30
 
 # 教程
 ## 1. fork仓库
