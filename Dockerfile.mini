@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:latest
+
+########################
+# Build Stage
+########################
+FROM --platform=$BUILDPLATFORM golang:alpine AS builder
+
+WORKDIR /go/src/github.com/XTLS/Xray-core
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG BRANCH=main
+
+ENV CGO_ENABLED=0
+ENV GOOS=$TARGETOS
+ENV GOARCH=$TARGETARCH
+
+RUN set -ex \
+  && apk add --no-cache git build-base \
+  && git clone -b $BRANCH --single-branch --depth 1 https://github.com/XTLS/Xray-core . \
+  && go build -trimpath \
+    -o /go/bin/xray \
+    -ldflags "-s -w -buildid=" \
+    ./main
+
+########################
+# Download geodat and prepare config/logs
+########################
+FROM alpine AS assets
+
+ARG GEOIP_URL="https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geoip.dat"
+ARG GEOSITE_URL="https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/release/geosite.dat"
+
+RUN set -ex \
+    && apk add --no-cache curl \
+    && mkdir -p /geodat /usr/local/etc/xray /var/log/xray \
+    && curl -fsSL "$GEOIP_URL" -o /geodat/geoip.dat & \
+       curl -fsSL "$GEOSITE_URL" -o /geodat/geosite.dat & \
+       wait \
+    && [ -s /geodat/geoip.dat ] \
+    && [ -s /geodat/geosite.dat ] \
+    && printf '{\n  "log": {\n    "error": "/var/log/xray/error.log",\n    "loglevel": "warning",\n    "access": "none",\n    "dnsLog": false\n  }\n}\n' \
+        > /usr/local/etc/xray/00_log.json \
+    && for i in 01_api 02_dns 03_routing 04_policy 05_inbounds 06_outbounds 07_transport 08_stats 09_reverse; do \
+        echo '{}' > "/usr/local/etc/xray/${i}.json"; \
+    done \
+    && touch /var/log/xray/access.log /var/log/xray/error.log
+
+########################
+# Final Stage (distroless)
+########################
+FROM gcr.io/distroless/static:nonroot
+
+LABEL maintainer="yourname <your@email.com>" \
+      org.opencontainers.image.title="Xray-core" \
+      org.opencontainers.image.description="Xray-core in a minimal distroless container" \
+      org.opencontainers.image.url="https://github.com/XTLS/Xray-core" \
+      org.opencontainers.image.source="https://github.com/your-repo/xray-docker" \
+      org.opencontainers.image.licenses="MIT"
+
+
+VOLUME ["/usr/local/etc/xray", "/var/log/xray"]
+
+ENV TZ="Etc/UTC" \
+    XRAY_LOCATION_ASSET=/usr/local/share/xray
+
+COPY --from=builder --chown=0:0 --chmod=755 /go/bin/xray /usr/local/bin/xray
+COPY --from=assets --chown=0:0 --chmod=644 /geodat/*.dat /usr/local/share/xray/
+COPY --from=assets --chown=0:0 --chmod=644 /usr/local/etc/xray/*.json /usr/local/etc/xray/
+COPY --from=assets --chown=65532:65532 --chmod=600 /var/log/xray/*.log /var/log/xray/
+
+ENTRYPOINT ["/usr/local/bin/xray"]
+CMD ["-confdir", "/usr/local/etc/xray/"]
