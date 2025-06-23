@@ -213,6 +213,6 @@ jobs:
           md5sum: "false"
           release_tag: "${{ env.LATEST_NEW }}"
           release_name: "${{ env.LATEST_NEW }}"
-          compress_assets: "auto"
+          compress_assets: "true"
           overwrite: true
           asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm != '' && format('-v{0}', matrix.goarm) || '' }}"
