@@ -162,7 +162,11 @@ jobs:
           - goos: linux
             goarch: arm64
           - goos: linux
-            goarch: riscv64  
+            goarch: riscv64
+          - goos: linux
+            goarch: mips64
+          - goos: linux
+            goarch: mips64le
           # Windows builds
           - goos: windows
             goarch: "386"
@@ -174,6 +178,11 @@ jobs:
           - goos: darwin
             goarch: amd64
           - goos: darwin
+            goarch: arm64
+          # FreeBSD builds
+          - goos: freebsd
+            goarch: amd64
+          - goos: freebsd
             goarch: arm64
     
     steps:
