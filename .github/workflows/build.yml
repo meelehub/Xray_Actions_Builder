@@ -222,5 +222,6 @@ jobs:
           release_tag: "${{ env.LATEST_NEW }}"
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "true"
+          create_realease: true
           overwrite: true
           asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm != '' && format('-v{0}', matrix.goarm) || '' }}"
