@@ -215,7 +215,7 @@ jobs:
           fi
           
       - name: Build latest releases
-        uses: fscarmen/go-release-action@v1.3.0
+        uses: fscarmen/go-release-action@v1.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
