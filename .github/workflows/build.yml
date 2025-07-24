@@ -205,7 +205,15 @@ jobs:
           ref: "${{ env.LATEST_NEW }}"
           fetch-depth: 1
           path: xray-core
-      
+          
+      - name: Set asset name
+        run: |
+          if [ -n "${{ matrix.goarm }}" ]; then
+            echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}-v${{ matrix.goarm }}" >> $GITHUB_ENV
+          else
+            echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}" >> $GITHUB_ENV
+          fi
+          
       - name: Build latest releases
         uses: fscarmen/go-release-action@v1.3.0
         with:
