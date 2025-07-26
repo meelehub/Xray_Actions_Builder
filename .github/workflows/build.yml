@@ -74,17 +74,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      # # Create GitHub release      
-      # - name: Create latest release
-      #   uses: shogo82148/actions-create-release@v1.6.0
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ env.LATEST_NEW }}
-      #     release_name: ${{ env.LATEST_NEW }}
-      #     draft: false
-      #     prerelease: false
-      #     overwrite: true
+      # Create GitHub release      
+      - name: Create latest release
+        uses: shogo82148/actions-create-release@v1.6.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.LATEST_NEW }}
+          release_name: ${{ env.LATEST_NEW }}
+          draft: false
+          prerelease: false
+          overwrite: true
 
       # Docker image build setup      
       - name: Set up QEMU
@@ -184,7 +184,9 @@ jobs:
             goarch: amd64
           - goos: freebsd
             goarch: arm64
-    
+      fail-fast: false
+
+      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.1.1
