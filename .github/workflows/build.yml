@@ -135,7 +135,7 @@ jobs:
           delete_run_by_conclusion_pattern: "cancelled,skipped,success"
   
   Build-releases:
-    needs: Check-version
+    needs: [Check-version, Build-and-release]
     if: ${{ needs.Check-version.outputs.latest_renew == '1' }}
     runs-on: ubuntu-latest
     name: "Build binary releases"
@@ -226,6 +226,8 @@ jobs:
           
       - name: Build latest releases
         uses: fscarmen/go-release-action@v1.0.0
+        env:
+          GOARM: ${{ matrix.goarm }}        
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
@@ -235,12 +237,11 @@ jobs:
           project_path: "./xray-core"
           binary_name: "${{ env.BINARY_NAME }}"
           build_flags: "-trimpath"
-          ldflags: -s -w -buildid=
+          ldflags: "-s -w -buildid="
           md5sum: "false"
           release_tag: "${{ env.LATEST_NEW }}"
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "true"
           create_release: false
           overwrite: true
-        # asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm != '' && format('-v{0}', matrix.goarm) || '' }}"
           asset_name: "${{ env.ASSET_NAME }}"
