@@ -146,6 +146,7 @@ jobs:
       CGO_ENABLED: 0
     
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Linux builds
@@ -183,9 +184,7 @@ jobs:
           - goos: freebsd
             goarch: amd64
           - goos: freebsd
-            goarch: arm64
-      fail-fast: false
-
+            goarch: arm64    
       
     steps:
       - name: Checkout code
