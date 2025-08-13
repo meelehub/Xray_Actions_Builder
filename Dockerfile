@@ -6,7 +6,7 @@ ENV GOOS=$TARGETOS
 ENV GOARCH=$TARGETARCH
 
 RUN set -ex \
-  && apk add git build-base \
+  && apk add --no-cache git build-base \
   && git clone -b $BRANCH --single-branch https://github.com/XTLS/Xray-core /go/src/github.com/XTLS/Xray-core \
   && go build -trimpath \
     -o /go/bin/xray \
@@ -15,8 +15,8 @@ RUN set -ex \
 
 FROM --platform=$TARGETPLATFORM alpine AS dist
 RUN set -ex \
-  && apk upgrade \
-  && apk add bash tzdata ca-certificates \
+  && apk upgrade --no-cache \
+  && apk add --no-cache bash tzdata ca-certificates \
   && rm -rf /var/cache/apk/* \
   && mkdir -p /usr/share/xray
 
