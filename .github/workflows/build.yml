@@ -233,7 +233,7 @@ jobs:
           goarch: ${{ matrix.goarch }}
           goarm: ${{ matrix.goarm }}
           goversion: ${{ env.GO_VERSION }}
-          project_path: "./xray-core"
+          project_path: "./xray-core/main"
           binary_name: "${{ env.BINARY_NAME }}"
           build_flags: "-trimpath"
           ldflags: "-s -w -buildid="
