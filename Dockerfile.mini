@@ -55,7 +55,7 @@ LABEL maintainer="yourname <your@email.com>" \
       org.opencontainers.image.title="Xray-core" \
       org.opencontainers.image.description="Xray-core in a minimal distroless container" \
       org.opencontainers.image.url="https://github.com/XTLS/Xray-core" \
-      org.opencontainers.image.source="https://github.com/your-repo/xray-docker" \
+      org.opencontainers.image.source="https://hub.docker.com/repository/docker/meele/xray" \
       org.opencontainers.image.licenses="MIT"
 
 
