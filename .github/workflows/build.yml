@@ -208,37 +208,31 @@ jobs:
           fetch-depth: 1
           path: xray-core
           
-      - name: Set binary name
+      - name: Set binary and asset names
         run: |
+          # Set binary
           if [ "${{ matrix.goos }}" = "windows" ]; then
             echo "BINARY_NAME=${{ env.BINARY }}.exe" >> $GITHUB_ENV
           else
             echo "BINARY_NAME=${{ env.BINARY }}" >> $GITHUB_ENV
           fi
           
-      - name: Set asset name
-        run: |
+          # asset names
           SUFFIX=""
           if [ -n "${{ matrix.goarm }}" ]; then
             SUFFIX="-v${{ matrix.goarm }}"
           fi
-          echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${SUFFIX}" >> $GITHUB_ENV
-          
-      - name: Set Go ARM version
-        if: ${{ contains(matrix.goarch, 'arm') }}
-        run: echo "GOARM=${{ matrix.goarm }}" >> $GITHUB_ENV
+          echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${SUFFIX}" >> $GITHUB_ENV          
           
       - name: Build latest releases
         uses: fscarmen/go-release-action@v1.0.0
-        env:
-          GOARM: ${{ env.GOARM }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goarm: ${{ matrix.goarm }}
           goversion: ${{ env.GO_VERSION }}
-          project_path: "xray-core"
+          project_path: "./xray-core"
           binary_name: "${{ env.BINARY_NAME }}"
           build_flags: "-trimpath"
           ldflags: -s -w -buildid=
@@ -246,6 +240,7 @@ jobs:
           release_tag: "${{ env.LATEST_NEW }}"
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "true"
+          create_release: false
           overwrite: true
         # asset_name: "${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm != '' && format('-v{0}', matrix.goarm) || '' }}"
           asset_name: "${{ env.ASSET_NAME }}"
