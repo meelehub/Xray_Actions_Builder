@@ -6,7 +6,7 @@ ENV GOOS=$TARGETOS
 ENV GOARCH=$TARGETARCH
 
 RUN set -ex \
-  && apk add git build-base git \
+  && apk add git build-base \
   && git clone -b $BRANCH --single-branch https://github.com/XTLS/Xray-core /go/src/github.com/XTLS/Xray-core \
   && go build -trimpath \
     -o /go/bin/xray \
