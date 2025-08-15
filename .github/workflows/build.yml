@@ -139,7 +139,7 @@ jobs:
           delete_run_by_conclusion_pattern: "cancelled,skipped,success"
   
   Build-releases:
-    needs: [Check-version, Build-and-release]
+    needs: Check-version
     if: ${{ needs.Check-version.outputs.latest_renew == '1' }}
     runs-on: ubuntu-latest
     name: "Build binary releases"
