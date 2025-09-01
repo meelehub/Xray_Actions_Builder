@@ -245,6 +245,6 @@ jobs:
           release_tag: "${{ env.LATEST_NEW }}"
           release_name: "${{ env.LATEST_NEW }}"
           compress_assets: "true"
-          create_release: false
+          create_release: true
           overwrite: true
           asset_name: "${{ env.ASSET_NAME }}"
