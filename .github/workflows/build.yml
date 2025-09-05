@@ -227,24 +227,45 @@ jobs:
           fi
           echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${SUFFIX}" >> $GITHUB_ENV          
           
-      - name: Build latest releases
-        uses: fscarmen/go-release-action@v1.0.0
+      # - name: Build latest releases
+      #   uses: fscarmen/go-release-action@v1.0.0
+      #   env:
+      #     GOARM: ${{ matrix.goarm }}        
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     goos: ${{ matrix.goos }}
+      #     goarch: ${{ matrix.goarch }}
+      #     goarm: ${{ matrix.goarm }}
+      #     goversion: ${{ env.GO_VERSION }}
+      #     project_path: "./xray-core/main"
+      #     binary_name: "${{ env.BINARY_NAME }}"
+      #     build_flags: "-trimpath"
+      #     ldflags: "-s -w -buildid="
+      #     md5sum: "false"
+      #     release_tag: "${{ env.LATEST_NEW }}"
+      #     release_name: "${{ env.LATEST_NEW }}"
+      #     compress_assets: "true"
+      #     create_release: true
+      #     overwrite: true
+      #     asset_name: "${{ env.ASSET_NAME }}"
+      - name: Build binary
         env:
-          GOARM: ${{ matrix.goarm }}        
+          GOARM: ${{ matrix.goarm }}
+        run: |
+          set -e
+          cd xray-core
+          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} GOARM=${{ matrix.goarm }} \
+            go build -trimpath -ldflags "-s -w -buildid=" -o "${{ env.BINARY_NAME }}" ./main
+          cd ..
+          mkdir -p dist
+          ASSET="${{ env.ASSET_NAME }}.tar.gz"
+          tar -czf "dist/$ASSET" -C xray-core "${{ env.BINARY_NAME }}"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          goos: ${{ matrix.goos }}
-          goarch: ${{ matrix.goarch }}
-          goarm: ${{ matrix.goarm }}
-          goversion: ${{ env.GO_VERSION }}
-          project_path: "./xray-core/main"
-          binary_name: "${{ env.BINARY_NAME }}"
-          build_flags: "-trimpath"
-          ldflags: "-s -w -buildid="
-          md5sum: "false"
-          release_tag: "${{ env.LATEST_NEW }}"
-          release_name: "${{ env.LATEST_NEW }}"
-          compress_assets: "true"
-          create_release: true
-          overwrite: true
-          asset_name: "${{ env.ASSET_NAME }}"
+          tag_name: ${{ env.LATEST_NEW }}
+          name: ${{ env.LATEST_NEW }}
+          files: dist/${{ env.ASSET_NAME }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
