@@ -111,7 +111,7 @@ jobs:
         uses: docker/build-push-action@v5.1.0
         with:
           push: true
-          file: Dockerfile.mini  # 指定 Dockerfile.mini
+          file: Dockerfile.mini
           platforms: linux/386,linux/amd64,linux/arm/v7,linux/arm64,linux/riscv64
           build-args: BRANCH=${{ env.LATEST_NEW }}
           tags: |
@@ -228,28 +228,7 @@ jobs:
             SUFFIX="-v${{ matrix.goarm }}"
           fi
           echo "ASSET_NAME=${{ env.BINARY }}-${{ matrix.goos }}-${{ matrix.goarch }}${SUFFIX}" >> $GITHUB_ENV          
-          
-      # - name: Build latest releases
-      #   uses: fscarmen/go-release-action@v1.0.0
-      #   env:
-      #     GOARM: ${{ matrix.goarm }}        
-      #   with:
-      #     github_token: ${{ secrets.GITHUB_TOKEN }}
-      #     goos: ${{ matrix.goos }}
-      #     goarch: ${{ matrix.goarch }}
-      #     goarm: ${{ matrix.goarm }}
-      #     goversion: ${{ env.GO_VERSION }}
-      #     project_path: "./xray-core/main"
-      #     binary_name: "${{ env.BINARY_NAME }}"
-      #     build_flags: "-trimpath"
-      #     ldflags: "-s -w -buildid="
-      #     md5sum: "false"
-      #     release_tag: "${{ env.LATEST_NEW }}"
-      #     release_name: "${{ env.LATEST_NEW }}"
-      #     compress_assets: "true"
-      #     create_release: true
-      #     overwrite: true
-      #     asset_name: "${{ env.ASSET_NAME }}"
+      
       - name: Build binary
         env:
           GOARM: ${{ matrix.goarm }}
