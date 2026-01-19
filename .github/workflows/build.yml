@@ -78,18 +78,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # # Create GitHub release      
-      # - name: Create latest release
-      #   uses: shogo82148/actions-create-release@v1.6.0
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ env.LATEST_NEW }}
-      #     release_name: ${{ env.LATEST_NEW }}
-      #     draft: false
-      #     prerelease: false
-      #     overwrite: true
-
       # Docker image build setup      
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3.0.0
@@ -105,8 +93,8 @@ jobs:
           username: ${{ env.DOCKER_USERNAME }}
           password: ${{ env.DOCKER_PASSWORD }}
 
-      # Build and push Docker image with caching      
-      - name: Push images to Docker hub
+      # Build and push main image to Docker hub      
+      - name: Push full image to Docker hub
         uses: docker/build-push-action@v5.1.0
         with:
           push: true
@@ -115,6 +103,20 @@ jobs:
           tags: |
             ${{ env.DOCKERHUB_REPOSITORY }}:latest
             ${{ env.DOCKERHUB_REPOSITORY }}:${{ env.LATEST_NEW }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Build and push mini image to Docker hub      
+      - name: Push mini image to Docker hub
+        uses: docker/build-push-action@v5.1.0
+        with:
+          push: true
+          file: Dockerfile.mini  # 指定 Dockerfile.mini
+          platforms: linux/386,linux/amd64,linux/arm/v7,linux/arm64,linux/riscv64
+          build-args: BRANCH=${{ env.LATEST_NEW }}
+          tags: |
+            ${{ env.DOCKERHUB_REPOSITORY }}:latest-mini
+            ${{ env.DOCKERHUB_REPOSITORY }}:${{ env.LATEST_NEW }}-mini
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
