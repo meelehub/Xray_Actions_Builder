@@ -1,12 +1,15 @@
 name: "Build latest images & releases"
+
 on:
   workflow_dispatch:
   schedule:
     - cron: "0 */1 * * *"
+
 permissions:
   contents: write
   packages: write
   actions: write
+
 concurrency:
   group: build-and-release-${{ github.workflow }}-${{ github.ref_name }}
   cancel-in-progress: true
@@ -29,25 +32,41 @@ jobs:
 
       - name: Check version
         id: get-version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+
           LATEST_NOW=$(awk '/^latest:/{print $2; exit}' README.md)
-          LATEST_NEW=$(curl -s --fail \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
+          
+          LATEST_NEW=$(curl -fsSL \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/XTLS/Xray-core/releases \
-            | jq -r '.[0].tag_name')
-          GO_VERSION=$(curl -s https://go.dev/VERSION?m=text | awk 'NR==1' | sed 's/^go//')
+            | jq -r '
+              [ .[] | select(.draft == false) ]
+              | sort_by(.published_at // .created_at)
+              | last
+              | .tag_name
+            ')
+
+          GO_VERSION=$(curl -fsSL https://go.dev/VERSION?m=text | awk 'NR==1' | sed 's/^go//')
 
           echo "LATEST_NOW: $LATEST_NOW"
           echo "LATEST_NEW: $LATEST_NEW"
           echo "GO_VERSION: $GO_VERSION"
+
+          if [ -z "$LATEST_NEW" ] || [ "$LATEST_NEW" = "null" ]; then
+            echo "Failed to fetch latest tag_name from GitHub API"
+            exit 1
+          fi
 
           LATEST_RENEW=0
           if [ "$LATEST_NOW" != "$LATEST_NEW" ]; then
             LATEST_RENEW=1
             DATE=$(date "+%Y/%m/%d")
             COMMIT="Build to $LATEST_NEW by Github Actions, $DATE"
-            echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+            echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
           fi
 
           {
@@ -55,7 +74,7 @@ jobs:
             echo "latest_new=$LATEST_NEW"
             echo "latest_renew=$LATEST_RENEW"
             echo "go_version=$GO_VERSION"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
 
   Build-and-release:
     needs: Check-version
