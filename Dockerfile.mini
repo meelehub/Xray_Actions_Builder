@@ -34,8 +34,8 @@ ARG GEOSITE_URL="https://raw.githubusercontent.com/Loyalsoldier/v2ray-rules-dat/
 RUN set -ex \
     && apk add --no-cache curl \
     && mkdir -p /geodat /usr/local/etc/xray /var/log/xray \
-    && curl -fsSL "$GEOIP_URL" -o /geodat/geoip.dat & \
-    && curl -fsSL "$GEOSITE_URL" -o /geodat/geosite.dat & \
+    && curl -fsSL "$GEOIP_URL" -o /geodat/geoip.dat \
+    && curl -fsSL "$GEOSITE_URL" -o /geodat/geosite.dat \
     && [ -s /geodat/geoip.dat ] \
     && [ -s /geodat/geosite.dat ] \
     && printf '{\n  "log": {\n    "error": "/var/log/xray/error.log",\n    "loglevel": "warning",\n    "access": "none",\n    "dnsLog": false\n  }\n}\n' \
