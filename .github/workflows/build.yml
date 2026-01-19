@@ -250,3 +250,29 @@ jobs:
           files: dist/${{ env.ASSET_NAME }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build mini asset (UPX)
+        if: ${{ matrix.goos == 'linux' && (matrix.goarch == 'amd64' || matrix.goarch == 'arm64') }}
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y upx-ucl
+
+          MINI_ASSET="${{ env.ASSET_NAME }}-mini.tar.gz"
+          
+          cp "xray-core/${{ env.BINARY_NAME }}" "xray-core/${{ env.BINARY_NAME }}.mini"
+          
+          upx -9 "xray-core/${{ env.BINARY_NAME }}.mini"
+          
+          tar -czf "dist/$MINI_ASSET" -C xray-core "${{ env.BINARY_NAME }}.mini"
+
+          echo "MINI_ASSET=$MINI_ASSET" >> $GITHUB_ENV
+
+      - name: Upload mini release asset
+        if: ${{ matrix.goos == 'linux' && (matrix.goarch == 'amd64' || matrix.goarch == 'arm64') }}
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ env.LATEST_NEW }}
+          files: dist/${{ env.MINI_ASSET }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}          
